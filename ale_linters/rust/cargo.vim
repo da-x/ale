@@ -31,6 +31,8 @@ function! ale_linters#rust#cargo#GetCommand(buffer, version_output) abort
     let l:use_all_targets = l:use_check
     \   && ale#Var(a:buffer, 'rust_cargo_check_all_targets')
     \   && ale#semver#GTE(l:version, [0, 22, 0])
+    let l:nearest_cargo = ale#path#FindNearestFile(a:buffer, 'Cargo.toml')
+    let l:nearest_cargo_dir = fnamemodify(l:nearest_cargo, ':h')
 
     let l:include_features = ale#Var(a:buffer, 'rust_cargo_include_features')
     if !empty(l:include_features)
@@ -47,7 +49,7 @@ function! ale_linters#rust#cargo#GetCommand(buffer, version_output) abort
         let l:default_feature = ''
     endif
 
-    return 'cargo '
+    return 'cd "'. l:nearest_cargo_dir .'" && cargo '
     \   . (l:use_check ? 'check' : 'build')
     \   . (l:use_all_targets ? ' --all-targets' : '')
     \   . ' --frozen --message-format=json -q'
