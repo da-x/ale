@@ -34,6 +34,18 @@ function! ale_linters#rust#cargo#GetCommand(buffer, version_output) abort
     let l:nearest_cargo = ale#path#FindNearestFile(a:buffer, 'Cargo.toml')
     let l:nearest_cargo_dir = fnamemodify(l:nearest_cargo, ':h')
 
+    let l:buffer_filename = fnamemodify(bufname(a:buffer), ':p')
+    let l:buffer_filename = fnameescape(l:buffer_filename)
+    let l:target_example = ""
+    if strpart(l:buffer_filename, 0, strlen(l:nearest_cargo_dir)) is# l:nearest_cargo_dir
+        let l:buffer_rel_filename = strpart(l:buffer_filename, strlen(l:nearest_cargo_dir) + 1)
+        let l:prefix = "examples/"
+        if strpart(l:buffer_rel_filename, 0, strlen(l:prefix)) is# l:prefix
+            let l:example = strpart(l:buffer_rel_filename, strlen(l:prefix))
+            let l:target_example = " --example " . fnamemodify(l:example, ":r")
+        endif
+    endif
+
     let l:include_features = ale#Var(a:buffer, 'rust_cargo_include_features')
     if !empty(l:include_features)
         let l:include_features = ' --features ' . ale#Escape(l:include_features)
@@ -52,6 +64,7 @@ function! ale_linters#rust#cargo#GetCommand(buffer, version_output) abort
     return 'cd "'. l:nearest_cargo_dir .'" && cargo '
     \   . (l:use_check ? 'check' : 'build')
     \   . (l:use_all_targets ? ' --all-targets' : '')
+    \   . l:target_example
     \   . ' --frozen --message-format=json -q'
     \   . l:default_feature
     \   . l:include_features
